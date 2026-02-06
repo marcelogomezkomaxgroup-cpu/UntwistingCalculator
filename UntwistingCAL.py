@@ -29,37 +29,29 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. State Management & Callbacks
-if 'lay_length' not in st.session_state:
-    st.session_state.lay_length = 1000.0
-
-def update_slider():
-    """This ensures the buttons update the slider's state directly"""
-    st.session_state.lay_length = st.session_state.slider_key
+# 2. State Management (The "Key" must be the same as the Slider)
+if 'slider_key' not in st.session_state:
+    st.session_state['slider_key'] = 1000.0
 
 def adjust_val(amount):
-    """Function for the buttons to change the value"""
-    new_val = st.session_state.lay_length + amount
-    st.session_state.lay_length = max(100.0, min(4950.0, new_val))
+    """Function for the buttons to change the SLIDER KEY directly"""
+    new_val = st.session_state['slider_key'] + amount
+    st.session_state['slider_key'] = max(100.0, min(4950.0, new_val))
 
 # --- UI START ---
 st.title("🌀 Zeta Torsion Controller")
 
 # 3. THE SLIDER (Ticker)
-# We use st.session_state.lay_length to drive the slider
 st.write("### LAY LENGTH ADJUSTMENT TRACKER")
+
+# CRITICAL FIX: We do NOT use 'value='. We only use 'key=' to link it to memory.
 p_mm = st.slider(
     "Drag to adjust", 
     min_value=100.0, 
     max_value=4950.0, 
-    value=st.session_state.lay_length,
     step=1.0,
-    key="slider_key",
-    on_change=update_slider
+    key="slider_key" 
 )
-
-# Sync back if the slider was moved manually
-st.session_state.lay_length = p_mm
 
 # Digital Readouts
 p_inch = p_mm * 0.0393701
@@ -79,12 +71,11 @@ with st.container(border=True):
     cols = st.columns([1, 1, 1, 1, 1, 0.1, 1, 1, 1, 1, 1])
 
     for i, val in enumerate(neg_vals):
-        # When clicked, adjust value then rerun to update slider position
         if cols[i].button(str(val), key=f"neg_{i}"):
             adjust_val(val)
             st.rerun()
 
-    cols[5].write("") 
+    cols[5].write("") # Spacer
 
     for i, val in enumerate(pos_vals):
         if cols[i+6].button(f"+{val}", key=f"pos_{i}"):
@@ -118,5 +109,5 @@ else:
     st.warning("SYSTEM BYPASS: Torsion Control Inactive")
 
 if st.button("RESET TO DEFAULT (1000mm)"):
-    st.session_state.lay_length = 1000.0
+    st.session_state['slider_key'] = 1000.0
     st.rerun()
