@@ -29,33 +29,40 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. State Management
+# 2. State Management & Callbacks
 if 'lay_length' not in st.session_state:
     st.session_state.lay_length = 1000.0
 
-# Function to update state from buttons
+def update_slider():
+    """This ensures the buttons update the slider's state directly"""
+    st.session_state.lay_length = st.session_state.slider_key
+
 def adjust_val(amount):
-    st.session_state.lay_length = max(100.0, min(4950.0, st.session_state.lay_length + amount))
+    """Function for the buttons to change the value"""
+    new_val = st.session_state.lay_length + amount
+    st.session_state.lay_length = max(100.0, min(4950.0, new_val))
 
 # --- UI START ---
 st.title("🌀 Zeta Torsion Controller")
 
-# 3. THE INTERACTIVE TICKER (SLIDER)
-# This slider is "connected" to st.session_state.lay_length
+# 3. THE SLIDER (Ticker)
+# We use st.session_state.lay_length to drive the slider
 st.write("### LAY LENGTH ADJUSTMENT TRACKER")
-st.session_state.lay_length = st.slider(
-    "Drag to adjust or use buttons below", 
+p_mm = st.slider(
+    "Drag to adjust", 
     min_value=100.0, 
     max_value=4950.0, 
     value=st.session_state.lay_length,
     step=1.0,
-    key="slider_input"
+    key="slider_key",
+    on_change=update_slider
 )
 
-# Digital Readouts
-p_mm = st.session_state.lay_length
-p_inch = p_mm * 0.0393701
+# Sync back if the slider was moved manually
+st.session_state.lay_length = p_mm
 
+# Digital Readouts
+p_inch = p_mm * 0.0393701
 col_m1, col_m2 = st.columns(2)
 col_m1.metric("LAY LENGTH (P)", f"{p_mm:.0f} mm")
 col_m2.metric("LAY LENGTH (IN)", f"{p_inch:.3f} in")
@@ -72,6 +79,7 @@ with st.container(border=True):
     cols = st.columns([1, 1, 1, 1, 1, 0.1, 1, 1, 1, 1, 1])
 
     for i, val in enumerate(neg_vals):
+        # When clicked, adjust value then rerun to update slider position
         if cols[i].button(str(val), key=f"neg_{i}"):
             adjust_val(val)
             st.rerun()
@@ -95,17 +103,17 @@ with col_in2:
 
 untwist_enabled = st.toggle("Untwisting Active", value=True)
 
-# --- THE CALCULATION (ORIGINAL FORMULA) ---
+# --- THE CALCULATION (ORIGINAL FORMULA: L / P) ---
 st.write("---")
 if untwist_enabled:
-    # L / P
-    rotations = total_mm / p_mm
-    st.markdown(f"""
-        <div style="background-color:#f0f2f6; padding:20px; border-radius:10px; border-left: 10px solid #2e7d32;">
-            <h2 style="margin:0; color:#333;">TOTAL UNTWIST ROTATIONS</h2>
-            <h1 style="margin:0; color:#2e7d32; font-size:60px;">{rotations:.3f}</h1>
-        </div>
-    """, unsafe_allow_html=True)
+    if p_mm > 0:
+        rotations = total_mm / p_mm
+        st.markdown(f"""
+            <div style="background-color:#f0f2f6; padding:20px; border-radius:10px; border-left: 10px solid #2e7d32;">
+                <h2 style="margin:0; color:#333;">TOTAL UNTWIST ROTATIONS</h2>
+                <h1 style="margin:0; color:#2e7d32; font-size:60px;">{rotations:.3f}</h1>
+            </div>
+        """, unsafe_allow_html=True)
 else:
     st.warning("SYSTEM BYPASS: Torsion Control Inactive")
 
