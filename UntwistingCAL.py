@@ -3,40 +3,23 @@ import streamlit as st
 # 1. Page Config
 st.set_page_config(page_title="Zeta Torsion Controller", page_icon="🌀", layout="wide")
 
-# --- CSS FOR BUTTONS & UI ---
+# --- CSS FOR BUTTONS (Stay same) ---
 st.markdown("""
     <style>
-    div.stButton > button:first-child {
-        height: 3em;
-        font-size: 14px;
-        font-weight: bold;
-        border-radius: 6px;
-        white-space: nowrap;
-    }
-    /* Negative Side (Red) */
+    div.stButton > button:first-child { height: 3em; font-size: 14px; font-weight: bold; border-radius: 6px; white-space: nowrap; }
     div[data-testid="column"]:nth-of-type(1) button, div[data-testid="column"]:nth-of-type(2) button,
     div[data-testid="column"]:nth-of-type(3) button, div[data-testid="column"]:nth-of-type(4) button,
-    div[data-testid="column"]:nth-of-type(5) button {
-        background-color: #d32f2f; color: white;
-    }
-    /* Positive Side (Green) */
+    div[data-testid="column"]:nth-of-type(5) button { background-color: #d32f2f; color: white; }
     div[data-testid="column"]:nth-of-type(7) button, div[data-testid="column"]:nth-of-type(8) button,
     div[data-testid="column"]:nth-of-type(9) button, div[data-testid="column"]:nth-of-type(10) button,
-    div[data-testid="column"]:nth-of-type(11) button {
-        background-color: #2e7d32; color: white;
-    }
+    div[data-testid="column"]:nth-of-type(11) button { background-color: #2e7d32; color: white; }
     .button-title { text-align: center; font-weight: bold; color: #555; margin-bottom: 5px; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. State Management (The "Key" must be the same as the Slider)
-if 'slider_key' not in st.session_state:
-    st.session_state['slider_key'] = 1000.0
-
-def adjust_val(amount):
-    """Function for the buttons to change the SLIDER KEY directly"""
-    new_val = st.session_state['slider_key'] + amount
-    st.session_state['slider_key'] = max(100.0, min(4950.0, new_val))
+# 2. STATE MANAGEMENT (The Fix is here)
+if 'lay_length' not in st.session_state:
+    st.session_state.lay_length = 1000.0
 
 # --- UI START ---
 st.title("🌀 Zeta Torsion Controller")
@@ -44,14 +27,17 @@ st.title("🌀 Zeta Torsion Controller")
 # 3. THE SLIDER (Ticker)
 st.write("### LAY LENGTH ADJUSTMENT TRACKER")
 
-# CRITICAL FIX: We do NOT use 'value='. We only use 'key=' to link it to memory.
+# We use a standard variable here, NOT the key-lock method
 p_mm = st.slider(
     "Drag to adjust", 
     min_value=100.0, 
     max_value=4950.0, 
-    step=1.0,
-    key="slider_key" 
+    value=float(st.session_state.lay_length), # We feed it the value from memory
+    step=1.0
 )
+
+# Sync the slider movement back to our memory
+st.session_state.lay_length = p_mm
 
 # Digital Readouts
 p_inch = p_mm * 0.0393701
@@ -72,14 +58,17 @@ with st.container(border=True):
 
     for i, val in enumerate(neg_vals):
         if cols[i].button(str(val), key=f"neg_{i}"):
-            adjust_val(val)
-            st.rerun()
+            # Update the memory directly
+            new_val = st.session_state.lay_length + val
+            st.session_state.lay_length = max(100.0, min(4950.0, new_val))
+            st.rerun() # Refresh to move the slider
 
-    cols[5].write("") # Spacer
+    cols[5].write("") 
 
     for i, val in enumerate(pos_vals):
         if cols[i+6].button(f"+{val}", key=f"pos_{i}"):
-            adjust_val(val)
+            new_val = st.session_state.lay_length + val
+            st.session_state.lay_length = max(100.0, min(4950.0, new_val))
             st.rerun()
 
 st.write("---")
@@ -94,7 +83,7 @@ with col_in2:
 
 untwist_enabled = st.toggle("Untwisting Active", value=True)
 
-# --- THE CALCULATION (ORIGINAL FORMULA: L / P) ---
+# --- THE CALCULATION ---
 st.write("---")
 if untwist_enabled:
     if p_mm > 0:
@@ -109,5 +98,5 @@ else:
     st.warning("SYSTEM BYPASS: Torsion Control Inactive")
 
 if st.button("RESET TO DEFAULT (1000mm)"):
-    st.session_state['slider_key'] = 1000.0
+    st.session_state.lay_length = 1000.0
     st.rerun()
