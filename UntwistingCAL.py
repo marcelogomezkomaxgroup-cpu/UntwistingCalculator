@@ -3,10 +3,15 @@ import streamlit as st
 # 1. Page Config
 st.set_page_config(page_title="Zeta Torsion Controller", page_icon="🌀", layout="wide")
 
-# --- HMI INDUSTRIAL CSS ---
+# --- KOMAX HMI DARK THEME CSS ---
 st.markdown("""
     <style>
-    /* Button Uniformity */
+    /* Main Background Color */
+    .stApp {
+        background-color: #2b3033;
+    }
+    
+    /* Uniform Button Sizing */
     div.stButton > button:first-child { 
         width: 100%;           
         height: 60px;          
@@ -14,49 +19,47 @@ st.markdown("""
         font-weight: bold; 
         border-radius: 4px; 
         border: 1px solid #444;
+        color: white;
     }
     
-    /* Input Box Heights to match buttons */
-    .stNumberInput div[data-baseweb="input"] { height: 60px; }
+    /* Input Box Heights & Colors */
+    .stNumberInput div[data-baseweb="input"] { 
+        height: 60px; 
+        background-color: #1e1e1e !important;
+        color: white !important;
+    }
 
     /* Red Negative Buttons */
     div[data-testid="column"]:nth-of-type(1) button, div[data-testid="column"]:nth-of-type(2) button,
     div[data-testid="column"]:nth-of-type(3) button, div[data-testid="column"]:nth-of-type(4) button,
-    div[data-testid="column"]:nth-of-type(5) button { background-color: #d32f2f !important; color: white !important; }
+    div[data-testid="column"]:nth-of-type(5) button { background-color: #a82222 !important; }
 
     /* Green Positive Buttons */
     div[data-testid="column"]:nth-of-type(7) button, div[data-testid="column"]:nth-of-type(8) button,
     div[data-testid="column"]:nth-of-type(9) button, div[data-testid="column"]:nth-of-type(10) button,
-    div[data-testid="column"]:nth-of-type(11) button { background-color: #2e7d32 !important; color: white !important; }
+    div[data-testid="column"]:nth-of-type(11) button { background-color: #1e7d32 !important; }
 
-    /* Komax Dark Card Display */
+    /* The Result Card */
     .komax-card {
-        background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 50%, #1e1e1e 100%);
+        background: #1e1e1e;
         padding: 40px;
-        border-radius: 12px;
-        border-bottom: 6px solid #28a745;
+        border-radius: 4px;
+        border-left: 10px solid #28a745;
         text-align: center;
         color: white;
-        box-shadow: 0px 10px 25px rgba(0,0,0,0.4);
+        box-shadow: 0px 10px 25px rgba(0,0,0,0.5);
     }
+    
     .wave-text {
-        background: linear-gradient(90deg, #28a745, #97ebad, #28a745);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: shine 3s linear infinite;
+        color: #28a745;
         font-weight: 800;
-        font-size: 80px;
+        font-size: 90px;
         margin: 0;
     }
-    @keyframes shine { to { background-position: 200% center; } }
-    
-    /* Centering the Wire Images */
-    .wire-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100%;
+
+    /* Styling for Metric Labels */
+    [data-testid="stMetricLabel"] {
+        color: #aaaaaa !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -69,34 +72,29 @@ def update_lay(val):
     st.session_state.lay_length = max(100.0, min(4950.0, float(st.session_state.lay_length + val)))
 
 # --- UI START ---
-st.title("🌀 Zeta Torsion Controller")
+st.title("🌀 Zeta Torsion Controller | TopWin HMI")
 
-# 3. TOP SECTION: WIRE STRIP IMAGES + TOTAL LENGTH
-# We create 3 columns: Left Wire Image | Main Input | Right Wire Image
-t_col1, t_col2, t_col3 = st.columns([1, 2, 1])
+# 3. THE WIRE GRAPHIC (Top Section)
+# This mimics the image you uploaded
+st.write("### Production View")
+col_img1, col_img2, col_img3 = st.columns([1, 4, 1])
+with col_img2:
+    # Using your uploaded image for the authentic wire processing look
+    st.image("image_d35f01.png", use_container_width=True)
 
-with t_col1:
-    st.markdown('<div class="wire-container">', unsafe_allow_html=True)
-    st.image("https://cdn-icons-png.flaticon.com/512/3011/3011931.png", width=120) # Representative Wire icon
-    st.caption("Side A: Strip & Crimp")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with t_col2:
+# 4. TOTAL WIRE LENGTH INPUT
+col_in1, col_in2 = st.columns([3, 1])
+with col_in1:
     total_mm = st.number_input("TOTAL WIRE LENGTH (L) mm", value=10000.0, step=1.0)
+with col_in2:
     total_inch = total_mm * 0.0393701
     st.metric("TOTAL WIRE in", f"{total_inch:.3f} in")
 
-with t_col3:
-    st.markdown('<div class="wire-container">', unsafe_allow_html=True)
-    st.image("https://cdn-icons-png.flaticon.com/512/3011/3011931.png", width=120) # Representative Wire icon
-    st.caption("Side B: Strip & Crimp")
-    st.markdown('</div>', unsafe_allow_html=True)
-
 st.write("---")
 
-# 4. LAY LENGTH SLIDER
+# 5. LAY LENGTH SLIDER
 st.write("### LAY LENGTH ADJUSTMENT (P)")
-st.slider("Adjust Pitch", 100.0, 4950.0, step=1.0, key="lay_length", help="Slide to adjust P (Pitch)")
+st.slider("Adjust Pitch", 100.0, 4950.0, step=1.0, key="lay_length", help="Set the twist pitch (P)")
 
 p_mm = st.session_state.lay_length
 p_inch = p_mm * 0.0393701
@@ -105,9 +103,9 @@ col_m1, col_m2 = st.columns(2)
 col_m1.metric("LAY LENGTH mm", f"{p_mm:.1f} mm")
 col_m2.metric("LAY LENGTH in", f"{p_inch:.3f} in")
 
-# 5. PRECISION BUTTONS
+# 6. PRECISION BUTTONS
 st.write("---")
-with st.container(border=True):
+with st.container():
     neg_vals = [-1000, -500, -50, -5, -1]
     pos_vals = [1, 5, 50, 500, 1000]
     cols = st.columns([1, 1, 1, 1, 1, 0.2, 1, 1, 1, 1, 1])
@@ -118,7 +116,7 @@ with st.container(border=True):
     for i, val in enumerate(pos_vals):
         cols[i+6].button(f"+{val}", key=f"btn_{val}", on_click=update_lay, args=(val,))
 
-# 6. CALCULATION DISPLAY
+# 7. CALCULATION DISPLAY
 st.write("---")
 untwist_enabled = st.toggle("Untwisting Active", value=True)
 
@@ -126,15 +124,16 @@ if untwist_enabled and p_mm > 0:
     rotations = total_mm / p_mm
     st.markdown(f"""
         <div class="komax-card">
-            <p style="text-transform: uppercase; letter-spacing: 3px; color: #888; font-weight:bold;">Torsion Calculation Output</p>
+            <p style="text-transform: uppercase; letter-spacing: 3px; color: #888;">Calculated Torsion Output</p>
             <h1 class="wave-text">{rotations:.3f}</h1>
-            <p style="font-size: 22px; color: #28a745; font-weight: bold;">TOTAL TURNS (REVOLUTIONS)</p>
+            <p style="font-size: 22px; color: #28a745; font-weight: bold;">TOTAL TURNS</p>
         </div>
     """, unsafe_allow_html=True)
 else:
     st.warning("⚠️ SYSTEM BYPASS: Torsion Control Inactive")
 
 # Sidebar
+st.sidebar.image("image_d35bfa.jpg", caption="HMI Reference View")
 if st.sidebar.button("System Reset"):
     st.session_state.lay_length = 1000.0
     st.rerun()
