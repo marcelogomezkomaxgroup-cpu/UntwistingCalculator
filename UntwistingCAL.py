@@ -6,27 +6,17 @@ st.set_page_config(page_title="Zeta Torsion Controller", page_icon="🌀", layou
 # --- KOMAX HMI DARK THEME CSS ---
 st.markdown("""
     <style>
-    /* Main Background Color */
-    .stApp {
-        background-color: #2b3033;
-    }
+    .stApp { background-color: #2b3033; }
     
     /* Uniform Button Sizing */
     div.stButton > button:first-child { 
-        width: 100%;           
-        height: 60px;          
-        font-size: 18px; 
-        font-weight: bold; 
-        border-radius: 4px; 
-        border: 1px solid #444;
-        color: white;
+        width: 100%; height: 60px; font-size: 18px; font-weight: bold; 
+        border-radius: 4px; border: 1px solid #444; color: white;
     }
     
     /* Input Box Heights & Colors */
     .stNumberInput div[data-baseweb="input"] { 
-        height: 60px; 
-        background-color: #1e1e1e !important;
-        color: white !important;
+        height: 60px; background-color: #1e1e1e !important; color: white !important;
     }
 
     /* Red Negative Buttons */
@@ -41,25 +31,24 @@ st.markdown("""
 
     /* The Result Card */
     .komax-card {
-        background: #1e1e1e;
-        padding: 40px;
-        border-radius: 4px;
-        border-left: 10px solid #28a745;
-        text-align: center;
-        color: white;
+        background: #1e1e1e; padding: 40px; border-radius: 4px;
+        border-left: 10px solid #28a745; text-align: center; color: white;
         box-shadow: 0px 10px 25px rgba(0,0,0,0.5);
     }
     
-    .wave-text {
-        color: #28a745;
-        font-weight: 800;
-        font-size: 90px;
-        margin: 0;
-    }
+    .wave-text { color: #28a745; font-weight: 800; font-size: 90px; margin: 0; }
 
-    /* Styling for Metric Labels */
-    [data-testid="stMetricLabel"] {
-        color: #aaaaaa !important;
+    /* HMI Wire Representation using CSS (No external file needed) */
+    .wire-graphic {
+        width: 100%; height: 40px; background: #666; position: relative;
+        border-radius: 5px; border: 2px solid #444; margin: 20px 0;
+    }
+    .wire-core {
+        width: 90%; height: 10px; background: #c0392b; 
+        position: absolute; top: 15px; left: 5%;
+    }
+    .strip-end {
+        width: 15px; height: 15px; background: #d35400; position: absolute; top: 12px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -72,15 +61,20 @@ def update_lay(val):
     st.session_state.lay_length = max(100.0, min(4950.0, float(st.session_state.lay_length + val)))
 
 # --- UI START ---
-st.title("🌀 Zeta Torsion Controller | TopWin HMI")
+st.title("🌀 Zeta Torsion Controller | HMI Mode")
 
-# 3. THE WIRE GRAPHIC (Top Section)
-# This mimics the image you uploaded
-st.write("### Production View")
-col_img1, col_img2, col_img3 = st.columns([1, 4, 1])
-with col_img2:
-    # Using your uploaded image for the authentic wire processing look
-    st.image("image_d35f01.png", use_container_width=True)
+# 3. THE WIRE GRAPHIC (CSS Version to avoid file errors)
+st.write("### Wire Processing Preview")
+st.markdown("""
+    <div style="background-color: #3e4447; padding: 20px; border-radius: 10px; text-align: center;">
+        <div style="color: #ccc; margin-bottom: 5px;">Double-Sided Strip Selection</div>
+        <div class="wire-graphic">
+            <div class="wire-core"></div>
+            <div class="strip-end" style="left: 2%;"></div>
+            <div class="strip-end" style="right: 2%;"></div>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 # 4. TOTAL WIRE LENGTH INPUT
 col_in1, col_in2 = st.columns([3, 1])
@@ -94,7 +88,7 @@ st.write("---")
 
 # 5. LAY LENGTH SLIDER
 st.write("### LAY LENGTH ADJUSTMENT (P)")
-st.slider("Adjust Pitch", 100.0, 4950.0, step=1.0, key="lay_length", help="Set the twist pitch (P)")
+st.slider("Adjust Pitch", 100.0, 4950.0, step=1.0, key="lay_length")
 
 p_mm = st.session_state.lay_length
 p_inch = p_mm * 0.0393701
@@ -132,8 +126,6 @@ if untwist_enabled and p_mm > 0:
 else:
     st.warning("⚠️ SYSTEM BYPASS: Torsion Control Inactive")
 
-# Sidebar
-st.sidebar.image("image_d35bfa.jpg", caption="HMI Reference View")
 if st.sidebar.button("System Reset"):
     st.session_state.lay_length = 1000.0
     st.rerun()
