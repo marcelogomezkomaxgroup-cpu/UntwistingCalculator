@@ -1,47 +1,49 @@
 import streamlit as st
 
+# 1. Initialize "Memory" (Session State)
+if 'lay_length' not in st.session_state:
+    st.session_state.lay_length = 1000.0
+
 # Helper for conversion
 def mm_to_inch(mm_val):
     return mm_val * 0.0393701
 
-# Title and Layout
+def adjust_val(amount):
+    new_val = st.session_state.lay_length + amount
+    # Keep it within your 100-4950 range
+    st.session_state.lay_length = max(100.0, min(4950.0, new_val))
+
 st.title("🌀 Zeta Torsion Controller")
-st.subheader("Dual Unit Precision Calculator")
 
-# 1. Bypass Switch
-untwist_enabled = st.checkbox("Untwisting Active", value=True)
+# --- SECTION 1: HEADER & BYPASS ---
+untwist_enabled = st.toggle("Untwisting Active", value=True)
 
-# 2. Lay Length Controls
-st.markdown(f"**Lay Length (P)**")
-col1, col2 = st.columns([3, 1])
+# --- SECTION 2: THE BUTTONS (Your favorite part) ---
+st.markdown(f"### Lay Length (P): **{st.session_state.lay_length:.0f} mm** :blue[({mm_to_inch(st.session_state.lay_length):.2f} in)]")
 
-with col1:
-    # The slider replaces your buttons and scale
-    lay_length = st.slider("Select mm", 100, 4950, 1000)
+# Create rows of buttons just like your Tkinter app
+increments = [-1000, -500, -50, -5, -1, 1, 5, 50, 500, 1000]
+cols = st.columns(len(increments))
 
-with col2:
-    # Show imperial equivalent immediately
-    st.metric("Inches", f"{mm_to_inch(lay_length):.2f} in")
+for i, inc in enumerate(increments):
+    label = f"+{inc}" if inc > 0 else str(inc)
+    if cols[i].button(label, key=f"btn_{inc}_{i}"):
+        adjust_val(inc)
 
-# 3. Wire Length Input
-total_mm = st.number_input("Total Wire Length (mm)", value=10000.0, step=1.0)
-st.caption(f"Equivalent to: {mm_to_inch(total_mm):.2f} inches")
+# A small slider for fine-tuning
+st.session_state.lay_length = st.slider("Fine Tune (mm)", 100.0, 4950.0, st.session_state.lay_length)
 
-# 4. Calculation Logic
+# --- SECTION 3: INPUT ---
 st.divider()
+total_mm = st.number_input("Total Wire Length (mm)", value=10000.0)
+st.caption(f"Imperial: {mm_to_inch(total_mm):.2f} inches")
 
+# --- SECTION 4: THE BIG RESULT ---
 if not untwist_enabled:
-    st.info("BYPASS MODE: System is currently inactive.")
-    rotations = 0.0
+    st.warning("SYSTEM BYPASS")
 else:
-    if lay_length > 0:
-        rotations = total_mm / lay_length
-        # Large Output Visual
-        st.write("### TOTAL UNTWIST ROTATIONS")
-        st.title(f" {rotations:.3f}")
-    else:
-        st.error("Lay Length must be greater than 0")
-
-# Styling the result box (Optional)
-if untwist_enabled:
-    st.success(f"Calculation complete for {total_mm}mm wire.")
+    rotations = total_mm / st.session_state.lay_length
+    
+    # Big visual container
+    st.container(border=True)
+    st.metric(label="TOTAL UNTWIST ROTATIONS", value=f"{rotations:.3f}")
