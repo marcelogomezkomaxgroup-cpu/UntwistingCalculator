@@ -1,26 +1,25 @@
 import streamlit as st
 
-# 1. Force "wide" mode so buttons have more horizontal room
+# 1. Page Config
 st.set_page_config(page_title="Zeta Torsion Controller", page_icon="🌀", layout="wide")
 
-# --- CSS FIXES ---
+# --- CSS FOR BUTTONS & UI ---
 st.markdown("""
     <style>
-    /* Fix button text wrapping and make them uniform */
     div.stButton > button:first-child {
         height: 3em;
-        font-size: 14px; /* Slightly smaller to fit +1000 on one line */
+        font-size: 14px;
         font-weight: bold;
         border-radius: 6px;
-        white-space: nowrap; /* Prevents text from splitting into two lines */
-        padding: 0px 2px;
+        white-space: nowrap;
     }
-    /* Color coding */
+    /* Negative Side (Red) */
     div[data-testid="column"]:nth-of-type(1) button, div[data-testid="column"]:nth-of-type(2) button,
     div[data-testid="column"]:nth-of-type(3) button, div[data-testid="column"]:nth-of-type(4) button,
     div[data-testid="column"]:nth-of-type(5) button {
         background-color: #d32f2f; color: white;
     }
+    /* Positive Side (Green) */
     div[data-testid="column"]:nth-of-type(7) button, div[data-testid="column"]:nth-of-type(8) button,
     div[data-testid="column"]:nth-of-type(9) button, div[data-testid="column"]:nth-of-type(10) button,
     div[data-testid="column"]:nth-of-type(11) button {
@@ -30,33 +29,46 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# 2. State Management
 if 'lay_length' not in st.session_state:
     st.session_state.lay_length = 1000.0
 
+# Function to update state from buttons
 def adjust_val(amount):
     st.session_state.lay_length = max(100.0, min(4950.0, st.session_state.lay_length + amount))
 
 # --- UI START ---
 st.title("🌀 Zeta Torsion Controller")
 
-# Ticker Visual
-p_mm = st.session_state.lay_length
-progress = (p_mm - 100) / (4950 - 100)
-st.progress(progress)
+# 3. THE INTERACTIVE TICKER (SLIDER)
+# This slider is "connected" to st.session_state.lay_length
+st.write("### LAY LENGTH ADJUSTMENT TRACKER")
+st.session_state.lay_length = st.slider(
+    "Drag to adjust or use buttons below", 
+    min_value=100.0, 
+    max_value=4950.0, 
+    value=st.session_state.lay_length,
+    step=1.0,
+    key="slider_input"
+)
 
-# Digital Readouts for Lay Length
+# Digital Readouts
+p_mm = st.session_state.lay_length
+p_inch = p_mm * 0.0393701
+
 col_m1, col_m2 = st.columns(2)
 col_m1.metric("LAY LENGTH (P)", f"{p_mm:.0f} mm")
-col_m2.metric("LAY LENGTH (IN)", f"{(p_mm * 0.0393701):.3f} in")
+col_m2.metric("LAY LENGTH (IN)", f"{p_inch:.3f} in")
 
-# --- COMPACT ADJUSTMENT PANEL ---
-st.markdown('<p class="button-title">Precision Lay Adjustment Controls</p>', unsafe_allow_html=True)
+st.write("---")
+
+# --- PRECISION BUTTONS ---
+st.markdown('<p class="button-title">Precision Incremental Controls</p>', unsafe_allow_html=True)
 
 with st.container(border=True):
     neg_vals = [-1000, -500, -50, -5, -1]
     pos_vals = [1, 5, 50, 500, 1000]
     
-    # Using 11 columns with a very tiny middle gap
     cols = st.columns([1, 1, 1, 1, 1, 0.1, 1, 1, 1, 1, 1])
 
     for i, val in enumerate(neg_vals):
@@ -73,24 +85,30 @@ with st.container(border=True):
 
 st.write("---")
 
-# --- TOTAL WIRE LENGTH + MISSING INCH CONVERSION ---
+# --- TOTAL WIRE LENGTH & CONVERSION ---
 col_in1, col_in2 = st.columns([2, 1])
 with col_in1:
-    total_mm = st.number_input("TOTAL WIRE LENGTH (L) in mm", value=10000.0)
+    total_mm = st.number_input("TOTAL WIRE LENGTH (L) in mm", value=10000.0, step=1.0)
 with col_in2:
-    # UPDATED: This now shows the conversion live for the Total Length
     total_inch = total_mm * 0.0393701
     st.metric("TOTAL INCHES", f"{total_inch:.3f} in")
 
 untwist_enabled = st.toggle("Untwisting Active", value=True)
 
-# --- CALCULATION ---
+# --- THE CALCULATION (ORIGINAL FORMULA) ---
+st.write("---")
 if untwist_enabled:
+    # L / P
     rotations = total_mm / p_mm
-    st.success(f"### TOTAL UNTWIST ROTATIONS: {rotations:.3f}")
+    st.markdown(f"""
+        <div style="background-color:#f0f2f6; padding:20px; border-radius:10px; border-left: 10px solid #2e7d32;">
+            <h2 style="margin:0; color:#333;">TOTAL UNTWIST ROTATIONS</h2>
+            <h1 style="margin:0; color:#2e7d32; font-size:60px;">{rotations:.3f}</h1>
+        </div>
+    """, unsafe_allow_html=True)
 else:
-    st.warning("SYSTEM BYPASS")
+    st.warning("SYSTEM BYPASS: Torsion Control Inactive")
 
-if st.button("RESET TO 1000mm"):
+if st.button("RESET TO DEFAULT (1000mm)"):
     st.session_state.lay_length = 1000.0
     st.rerun()
